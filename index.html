@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Weather Forecast</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: Arial, sans-serif;
+      }
+
+      body {
+        background: linear-gradient(135deg, #00b4d8, #0077b6);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+      }
+
+      .weather-container {
+        background: rgba(255, 255, 255, 0.9);
+        padding: 2rem;
+        border-radius: 20px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 500px;
+      }
+
+      .search-box {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 2rem;
+      }
+
+      input {
+        flex: 1;
+        padding: 12px 20px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        font-size: 16px;
+        outline: none;
+        transition: border-color 0.3s;
+      }
+
+      input:focus {
+        border-color: #00b4d8;
+      }
+
+      button {
+        padding: 12px 25px;
+        background: #00b4d8;
+        border: none;
+        border-radius: 10px;
+        color: white;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background 0.3s;
+      }
+
+      button:hover {
+        background: #0077b6;
+      }
+
+      .weather-info {
+        text-align: center;
+        display: none;
+      }
+
+      .weather-info.active {
+        display: block;
+      }
+
+      .weather-icon {
+        width: 100px;
+        height: 100px;
+        margin: 1rem auto;
+      }
+
+      .temperature {
+        font-size: 3rem;
+        font-weight: bold;
+        color: #333;
+        margin: 1rem 0;
+      }
+
+      .description {
+        font-size: 1.5rem;
+        color: #666;
+        margin-bottom: 1rem;
+      }
+      .name {
+        font-size: 1.5rem;
+        color: #000;
+        margin-bottom: 1rem;
+      }
+      .details {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        margin-top: 2rem;
+        padding-top: 1rem;
+        border-top: 2px solid #e0e0e0;
+      }
+
+      .detail-item {
+        text-align: center;
+      }
+
+      .detail-label {
+        color: #666;
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .detail-value {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #333;
+      }
+
+      .error-message {
+        color: #dc3545;
+        text-align: center;
+        display: none;
+        margin-top: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="weather-container">
+      <div class="search-box">
+        <input
+          type="text"
+          id="cityInput"
+          placeholder="Ingresa el nombre de la ciudad"
+          onkeypress="handleKeyPress(event)"
+        />
+        <button onclick="getWeather()">Buscar</button>
+      </div>
+
+      <div class="error-message" id="errorMessage">
+        Ciudad no encontrada. Por favor, intenta con otro nombre.
+      </div>
+
+      <div class="weather-info" id="weatherInfo">
+        <img src="" alt="Weather icon" class="weather-icon" id="weatherIcon" />
+        <div class="temperature" id="temperature"></div>
+        <div class="description" id="description"></div>
+        <div class="name" id="name"></div>
+
+        <div class="details">
+          <div class="detail-item">
+            <div class="detail-label">Humedad</div>
+            <div class="detail-value" id="humidity"></div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Probabilidad de lluvia</div>
+            <div class="detail-value" id="rainProb"></div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Viento</div>
+            <div class="detail-value" id="wind"></div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Nubes</div>
+            <div class="detail-value" id="clouds"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const API_KEY = "d21104b5c285df00223f16db5a16a25e"; // Reemplaza con tu API key de OpenWeatherMap
+
+      function handleKeyPress(event) {
+        if (event.key === "Enter") {
+          getWeather();
+        }
+      }
+
+      async function getWeather() {
+        const cityInput = document.getElementById("cityInput");
+        const city = cityInput.value;
+
+        if (!city) return;
+
+        try {
+          // Primero obtenemos las coordenadas de la ciudad
+          const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${API_KEY}`;
+          const geoResponse = await fetch(geoUrl);
+          const geoData = await geoResponse.json();
+          const nombre =document.getElementById("name");
+          console.log(geoData[0]);
+nombre.textContent=geoData[0].name;
+          if (!geoData.length) {
+            showError();
+            return;
+          }
+
+          const { lat, lon } = geoData[0];
+
+          // Luego obtenemos el clima actual y el pronóstico
+          const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric&lang=es`;
+          const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric&lang=es`;
+
+          const [weatherResponse, forecastResponse] = await Promise.all([
+            fetch(weatherUrl),
+            fetch(forecastUrl),
+          ]);
+
+          const weatherData = await weatherResponse.json();
+          const forecastData = await forecastResponse.json();
+
+          displayWeather(weatherData, forecastData);
+          hideError();
+        } catch (error) {
+          console.error("Error:", error);
+          showError();
+        }
+      }
+
+      function displayWeather(weatherData, forecastData) {
+        const weatherInfo = document.getElementById("weatherInfo");
+        const weatherIcon = document.getElementById("weatherIcon");
+        const temperature = document.getElementById("temperature");
+        const description = document.getElementById("description");
+        const humidity = document.getElementById("humidity");
+        const rainProb = document.getElementById("rainProb");
+        const wind = document.getElementById("wind");
+        const clouds = document.getElementById("clouds");
+        // const nombre =document.getElementById("name");
+
+        // Mostrar icono del clima
+        weatherIcon.src = `https://openweathermap.org/img/wn/${weatherData.weather[0].icon}@2x.png`;
+
+        // Mostrar temperatura
+        temperature.textContent = `${Math.round(weatherData.main.temp)}°C`;
+
+        // Mostrar descripción
+        description.textContent = capitalizeFirstLetter(
+          weatherData.weather[0].description
+        );
+
+        // nombre.textContent=capitalizeFirstLetter(
+        //   weatherData.name
+        // );
+
+
+        // Mostrar detalles
+        humidity.textContent = `${weatherData.main.humidity}%`;
+
+        // Calcular probabilidad de lluvia desde el pronóstico
+        const rainProbability = calculateRainProbability(forecastData);
+        rainProb.textContent = `${rainProbability}%`;
+
+        wind.textContent = `${Math.round(weatherData.wind.speed * 3.6)} km/h`; // Convertir de m/s a km/h
+        clouds.textContent = `${weatherData.clouds.all}%`;
+
+        weatherInfo.classList.add("active");
+      }
+
+      function calculateRainProbability(forecastData) {
+        // Tomamos las próximas 24 horas (8 mediciones, ya que son cada 3 horas)
+        const next24Hours = forecastData.list.slice(0, 8);
+
+        // Contamos cuántas mediciones tienen lluvia
+        const rainCount = next24Hours.filter(
+          (measurement) => measurement.rain && measurement.rain["3h"]
+        ).length;
+
+        // Calculamos el porcentaje
+        return Math.round((rainCount / 8) * 100);
+      }
+
+      function capitalizeFirstLetter(string) {
+        return string.charAt(0).toUpperCase() + string.slice(1);
+      }
+
+      function showError() {
+        document.getElementById("errorMessage").style.display = "block";
+        document.getElementById("weatherInfo").classList.remove("active");
+      }
+
+      function hideError() {
+        document.getElementById("errorMessage").style.display = "none";
+      }
+    </script>
+  </body>
+</html>
